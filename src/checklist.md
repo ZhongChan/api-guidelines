@@ -1,77 +1,82 @@
-# Rust API Guidelines Checklist
+# Rust API 指南检查清单
 
-<!-- Read CONTRIBUTING.md before writing new guidelines -->
+- **命名** *(crate 符合 Rust 命名规范)*
+  - [ ] 大小写符合 RFC 430 ([C-CASE])
+  - [ ] 临时转换遵循 `as_`、`to_`、`into_` 约定 ([C-CONV])
+  - [ ] Getter 名称遵循 Rust 约定 ([C-GETTER])
+  - [ ] 生成迭代器的集合方法遵循 `iter`、`iter_mut`、`into_iter` ([C-ITER])
+  - [ ] 迭代器类型名称与生成它们的方法匹配 ([C-ITER-TY])
+  - [ ] 功能名称不含占位词 ([C-FEATURE])
+  - [ ] 名称使用一致的词序 ([C-WORD-ORDER])
 
-- **Naming** *(crate aligns with Rust naming conventions)*
-  - [ ] Casing conforms to RFC 430 ([C-CASE])
-  - [ ] Ad-hoc conversions follow `as_`, `to_`, `into_` conventions ([C-CONV])
-  - [ ] Getter names follow Rust convention ([C-GETTER])
-  - [ ] Methods on collections that produce iterators follow `iter`, `iter_mut`, `into_iter` ([C-ITER])
-  - [ ] Iterator type names match the methods that produce them ([C-ITER-TY])
-  - [ ] Feature names are free of placeholder words ([C-FEATURE])
-  - [ ] Names use a consistent word order ([C-WORD-ORDER])
-- **Interoperability** *(crate interacts nicely with other library functionality)*
-  - [ ] Types eagerly implement common traits ([C-COMMON-TRAITS])
-    - `Copy`, `Clone`, `Eq`, `PartialEq`, `Ord`, `PartialOrd`, `Hash`, `Debug`,
-      `Display`, `Default`
-  - [ ] Conversions use the standard traits `From`, `AsRef`, `AsMut` ([C-CONV-TRAITS])
-  - [ ] Collections implement `FromIterator` and `Extend` ([C-COLLECT])
-  - [ ] Data structures implement Serde's `Serialize`, `Deserialize` ([C-SERDE])
-  - [ ] Types are `Send` and `Sync` where possible ([C-SEND-SYNC])
-  - [ ] Error types are meaningful and well-behaved ([C-GOOD-ERR])
-  - [ ] Binary number types provide `Hex`, `Octal`, `Binary` formatting ([C-NUM-FMT])
-  - [ ] Generic reader/writer functions take `R: Read` and `W: Write` by value ([C-RW-VALUE])
-- **Macros** *(crate presents well-behaved macros)*
-  - [ ] Input syntax is evocative of the output ([C-EVOCATIVE])
-  - [ ] Macros compose well with attributes ([C-MACRO-ATTR])
-  - [ ] Item macros work anywhere that items are allowed ([C-ANYWHERE])
-  - [ ] Item macros support visibility specifiers ([C-MACRO-VIS])
-  - [ ] Type fragments are flexible ([C-MACRO-TY])
-- **Documentation** *(crate is abundantly documented)*
-  - [ ] Crate level docs are thorough and include examples ([C-CRATE-DOC])
-  - [ ] All items have a rustdoc example ([C-EXAMPLE])
-  - [ ] Examples use `?`, not `try!`, not `unwrap` ([C-QUESTION-MARK])
-  - [ ] Function docs include error, panic, and safety considerations ([C-FAILURE])
-  - [ ] Prose contains hyperlinks to relevant things ([C-LINK])
-  - [ ] Cargo.toml includes all common metadata ([C-METADATA])
-    - authors, description, license, homepage, documentation, repository,
-      keywords, categories
-  - [ ] Release notes document all significant changes ([C-RELNOTES])
-  - [ ] Rustdoc does not show unhelpful implementation details ([C-HIDDEN])
-- **Predictability** *(crate enables legible code that acts how it looks)*
-  - [ ] Smart pointers do not add inherent methods ([C-SMART-PTR])
-  - [ ] Conversions live on the most specific type involved ([C-CONV-SPECIFIC])
-  - [ ] Functions with a clear receiver are methods ([C-METHOD])
-  - [ ] Functions do not take out-parameters ([C-NO-OUT])
-  - [ ] Operator overloads are unsurprising ([C-OVERLOAD])
-  - [ ] Only smart pointers implement `Deref` and `DerefMut` ([C-DEREF])
-  - [ ] Constructors are static, inherent methods ([C-CTOR])
-- **Flexibility** *(crate supports diverse real-world use cases)*
-  - [ ] Functions expose intermediate results to avoid duplicate work ([C-INTERMEDIATE])
-  - [ ] Caller decides where to copy and place data ([C-CALLER-CONTROL])
-  - [ ] Functions minimize assumptions about parameters by using generics ([C-GENERIC])
-  - [ ] Traits are object-safe if they may be useful as a trait object ([C-OBJECT])
-- **Type safety** *(crate leverages the type system effectively)*
-  - [ ] Newtypes provide static distinctions ([C-NEWTYPE])
-  - [ ] Arguments convey meaning through types, not `bool` or `Option` ([C-CUSTOM-TYPE])
-  - [ ] Types for a set of flags are `bitflags`, not enums ([C-BITFLAG])
-  - [ ] Builders enable construction of complex values ([C-BUILDER])
-- **Dependability** *(crate is unlikely to do the wrong thing)*
-  - [ ] Functions validate their arguments ([C-VALIDATE])
-  - [ ] Destructors never fail ([C-DTOR-FAIL])
-  - [ ] Destructors that may block have alternatives ([C-DTOR-BLOCK])
-- **Debuggability** *(crate is conducive to easy debugging)*
-  - [ ] All public types implement `Debug` ([C-DEBUG])
-  - [ ] `Debug` representation is never empty ([C-DEBUG-NONEMPTY])
-- **Future proofing** *(crate is free to improve without breaking users' code)*
-  - [ ] Sealed traits protect against downstream implementations ([C-SEALED])
-  - [ ] Structs have private fields ([C-STRUCT-PRIVATE])
-  - [ ] Newtypes encapsulate implementation details ([C-NEWTYPE-HIDE])
-  - [ ] Data structures do not duplicate derived trait bounds ([C-STRUCT-BOUNDS])
-- **Necessities** *(to whom they matter, they really matter)*
-  - [ ] Public dependencies of a stable crate are stable ([C-STABLE])
-  - [ ] Crate and its dependencies have a permissive license ([C-PERMISSIVE])
+- **互操作性** *(crate 能良好地与其他库功能交互)*
+  - [ ] 类型主动实现常见特性 ([C-COMMON-TRAITS])
+    - `Copy`、`Clone`、`Eq`、`PartialEq`、`Ord`、`PartialOrd`、`Hash`、`Debug`、`Display`、`Default`
+  - [ ] 转换使用标准特性 `From`、`AsRef`、`AsMut` ([C-CONV-TRAITS])
+  - [ ] 集合实现 `FromIterator` 和 `Extend` ([C-COLLECT])
+  - [ ] 数据结构实现 Serde 的 `Serialize`、`Deserialize` ([C-SERDE])
+  - [ ] 类型在可能的情况下是 `Send` 和 `Sync` ([C-SEND-SYNC])
+  - [ ] 错误类型有意义且行为良好 ([C-GOOD-ERR])
+  - [ ] 二进制数字类型提供 `Hex`、`Octal`、`Binary` 格式化 ([C-NUM-FMT])
+  - [ ] 通用读/写函数按值接受 `R: Read` 和 `W: Write` ([C-RW-VALUE])
 
+- **宏** *(crate 提供良好行为的宏)*
+  - [ ] 输入语法能唤起输出 ([C-EVOCATIVE])
+  - [ ] 宏与属性良好组合 ([C-MACRO-ATTR])
+  - [ ] 项目宏可以在允许项目的任何地方使用 ([C-ANYWHERE])
+  - [ ] 项目宏支持可见性说明符 ([C-MACRO-VIS])
+  - [ ] 类型片段灵活 ([C-MACRO-TY])
+
+- **文档** *(crate 有丰富的文档)*
+  - [ ] crate 级别文档详尽且包含示例 ([C-CRATE-DOC])
+  - [ ] 所有项目都有 rustdoc 示例 ([C-EXAMPLE])
+  - [ ] 示例使用 `?`，而不是 `try!` 或 `unwrap` ([C-QUESTION-MARK])
+  - [ ] 函数文档包括错误、panic 和安全性考量 ([C-FAILURE])
+  - [ ] 文章包含指向相关内容的超链接 ([C-LINK])
+  - [ ] Cargo.toml 包含所有常见元数据 ([C-METADATA])
+    - 作者、描述、许可证、主页、文档、仓库、关键词、类别
+  - [ ] 发布说明记录所有重要更改 ([C-RELNOTES])
+  - [ ] Rustdoc 不显示无用的实现细节 ([C-HIDDEN])
+
+- **可预测性** *(crate 使代码易读且按预期运行)*
+  - [ ] 智能指针不添加固有方法 ([C-SMART-PTR])
+  - [ ] 转换存在于最具体的相关类型上 ([C-CONV-SPECIFIC])
+  - [ ] 有明确接收者的函数是方法 ([C-METHOD])
+  - [ ] 函数不使用输出参数 ([C-NO-OUT])
+  - [ ] 运算符重载不令人惊讶 ([C-OVERLOAD])
+  - [ ] 只有智能指针实现 `Deref` 和 `DerefMut` ([C-DEREF])
+  - [ ] 构造函数是静态的固有方法 ([C-CTOR])
+
+- **灵活性** *(crate 支持多样的实际用例)*
+  - [ ] 函数暴露中间结果以避免重复工作 ([C-INTERMEDIATE])
+  - [ ] 调用者决定数据复制和放置的位置 ([C-CALLER-CONTROL])
+  - [ ] 函数通过使用泛型来最小化对参数的假设 ([C-GENERIC])
+  - [ ] 如果特性作为特性对象有用，则应是对象安全的 ([C-OBJECT])
+
+- **类型安全** *(crate 有效利用类型系统)*
+  - [ ] 新类型提供静态区别 ([C-NEWTYPE])
+  - [ ] 参数通过类型传达意义，而不是 `bool` 或 `Option` ([C-CUSTOM-TYPE])
+  - [ ] 一组标志的类型是 `bitflags`，而不是枚举 ([C-BITFLAG])
+  - [ ] 构建器支持复杂值的构造 ([C-BUILDER])
+
+- **可靠性** *(crate 不太可能出错)*
+  - [ ] 函数验证其参数 ([C-VALIDATE])
+  - [ ] 析构函数从不失败 ([C-DTOR-FAIL])
+  - [ ] 可能阻塞的析构函数有替代方案 ([C-DTOR-BLOCK])
+
+- **可调试性** *(crate 便于调试)*
+  - [ ] 所有公共类型实现 `Debug` ([C-DEBUG])
+  - [ ] `Debug` 表示不为空 ([C-DEBUG-NONEMPTY])
+
+- **未来保障** *(crate 可以在不破坏用户代码的情况下改进)*
+  - [ ] 密封特性保护下游实现 ([C-SEALED])
+  - [ ] 结构体有私有字段 ([C-STRUCT-PRIVATE])
+  - [ ] 新类型封装实现细节 ([C-NEWTYPE-HIDE])
+  - [ ] 数据结构不重复派生特性边界 ([C-STRUCT-BOUNDS])
+
+- **必要性** *(对某些人来说，它们非常重要)*
+  - [ ] 稳定 crate 的公共依赖是稳定的 ([C-STABLE])
+  - [ ] crate 及其依赖具有宽松的许可证 ([C-PERMISSIVE])
 
 [C-CASE]: naming.html#c-case
 [C-CONV]: naming.html#c-conv
@@ -102,7 +107,6 @@
 [C-FAILURE]: documentation.html#c-failure
 [C-LINK]: documentation.html#c-link
 [C-METADATA]: documentation.html#c-metadata
-[C-HTML-ROOT]: documentation.html#c-html-root
 [C-RELNOTES]: documentation.html#c-relnotes
 [C-HIDDEN]: documentation.html#c-hidden
 
