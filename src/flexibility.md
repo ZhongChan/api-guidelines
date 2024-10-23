@@ -1,87 +1,61 @@
-# Flexibility
+# 灵活性
 
+## 函数公开中间结果以避免重复工作 (C-INTERMEDIATE)
 
-<a id="c-intermediate"></a>
-## Functions expose intermediate results to avoid duplicate work (C-INTERMEDIATE)
+许多函数在回答问题时也会计算相关数据。如果这些数据对用户可能有用，考虑在 API 中公开它们。
 
-Many functions that answer a question also compute interesting related data. If
-this data is potentially of interest to the client, consider exposing it in the
-API.
+### 标准库中的示例
 
-### Examples from the standard library
+- [`Vec::binary_search`] 不返回一个表示值是否找到的 `bool`，也不返回一个表示值可能找到的索引的 `Option<usize>`。相反，它返回有关索引的信息，如果未找到，还会返回需要插入值的索引。
 
-- [`Vec::binary_search`] does not return a `bool` of whether the value was
-  found, nor an `Option<usize>` of the index at which the value was maybe found.
-  Instead it returns information about the index if found, and also the index at
-  which the value would need to be inserted if not found.
+- [`String::from_utf8`] 如果输入字节不是 UTF-8 可能会失败。在错误情况下，它返回一个中间结果，暴露输入中有效 UTF-8 的字节偏移量，并返回输入字节的所有权。
 
-- [`String::from_utf8`] may fail if the input bytes are not UTF-8. In the error
-  case it returns an intermediate result that exposes the byte offset up to
-  which the input was valid UTF-8, as well as handing back ownership of the
-  input bytes.
+- [`HashMap::insert`] 返回一个 `Option<T>`，其中包含给定键的预先存在的值（如果有）。对于用户想要恢复此值的情况，通过插入操作返回它可以避免用户进行第二次哈希表查找。
 
-- [`HashMap::insert`] returns an `Option<T>` that returns the preexisting value
-  for a given key, if any. For cases where the user wants to recover this value
-  having it returned by the insert operation avoids the user having to do a second
-  hash table lookup.
+## 调用者决定数据的复制和放置位置 (C-CALLER-CONTROL)
 
-[`Vec::binary_search`]: https://doc.rust-lang.org/std/vec/struct.Vec.html#method.binary_search
-[`String::from_utf8`]: https://doc.rust-lang.org/std/string/struct.String.html#method.from_utf8
-[`HashMap::insert`]: https://doc.rust-lang.org/stable/std/collections/struct.HashMap.html#method.insert
-
-
-<a id="c-caller-control"></a>
-## Caller decides where to copy and place data (C-CALLER-CONTROL)
-
-If a function requires ownership of an argument, it should take ownership of the
-argument rather than borrowing and cloning the argument.
+如果函数需要参数的所有权，它应该获取参数的所有权，而不是借用和克隆参数。
 
 ```rust
-// Prefer this:
+// 优先选择这样：
 fn foo(b: Bar) {
-    /* use b as owned, directly */
+    /* 直接使用 b 作为所有权 */
 }
 
-// Over this:
+// 而不是这样：
 fn foo(b: &Bar) {
     let b = b.clone();
-    /* use b as owned after cloning */
+    /* 克隆后使用 b 作为所有权 */
 }
 ```
 
-If a function *does not* require ownership of an argument, it should take a
-shared or exclusive borrow of the argument rather than taking ownership and
-dropping the argument.
+如果函数*不需要*参数的所有权，它应该借用参数而不是获取所有权并在函数返回前丢弃参数。
 
 ```rust
-// Prefer this:
+// 优先选择这样：
 fn foo(b: &Bar) {
-    /* use b as borrowed */
+    /* 使用 b 作为借用 */
 }
 
-// Over this:
+// 而不是这样：
 fn foo(b: Bar) {
-    /* use b as borrowed, it is implicitly dropped before function returns */
+    /* 使用 b 作为借用，函数返回前会隐式丢弃 b */
 }
 ```
 
-The `Copy` trait should only be used as a bound when absolutely needed, not as a
-way of signaling that copies should be cheap to make.
+`Copy` 特性应仅在绝对需要时使用，而不是用来表示复制应该是廉价的。
 
+## 函数通过使用泛型最小化对参数的假设 (C-GENERIC)
 
-<a id="c-generic"></a>
-## Functions minimize assumptions about parameters by using generics (C-GENERIC)
+函数对输入的假设越少，其适用范围就越广。
 
-The fewer assumptions a function makes about its inputs, the more widely usable
-it becomes.
-
-Prefer
+优先选择
 
 ```rust
 fn foo<I: IntoIterator<Item = i64>>(iter: I) { /* ... */ }
 ```
 
-over any of
+而不是
 
 ```rust
 fn foo(c: &[i64]) { /* ... */ }
@@ -89,86 +63,35 @@ fn foo(c: &Vec<i64>) { /* ... */ }
 fn foo(c: &SomeOtherCollection<i64>) { /* ... */ }
 ```
 
-if the function only needs to iterate over the data.
+如果函数只需要迭代数据。
 
-More generally, consider using generics to pinpoint the assumptions a function
-needs to make about its arguments.
+### 泛型的优点
 
-### Advantages of generics
+- _可重用性_：泛型函数可以应用于开放集合的类型，同时提供这些类型必须提供的功能的明确约定。
+- _静态调度和优化_：每次使用泛型函数时，都会针对实现特性边界的特定类型进行专门化，从而使特性方法的调用是静态的、直接的，并且编译器可以内联和优化这些调用。
+- _内联布局_：如果 `struct` 和 `enum` 类型是某个类型参数 `T` 的泛型，`T` 类型的值将在 `struct`/`enum` 中内联布局，没有任何间接。
+- _推断_：由于泛型函数的类型参数通常可以被推断，泛型函数可以帮助减少代码中的冗长。
+- _精确类型_：因为泛型为实现特性的特定类型提供了一个_名称_，所以可以精确地表达需要或产生该精确类型的地方。
 
-* _Reusability_. Generic functions can be applied to an open-ended collection of
-  types, while giving a clear contract for the functionality those types must
-  provide.
+### 泛型的缺点
 
-* _Static dispatch and optimization_. Each use of a generic function is
-  specialized ("monomorphized") to the particular types implementing the trait
-  bounds, which means that (1) invocations of trait methods are static, direct
-  calls to the implementation and (2) the compiler can inline and otherwise
-  optimize these calls.
+- _代码大小_：专用化泛型函数意味着函数体被复制。代码大小的增加必须与静态调度的性能收益权衡。
+- _同质类型_：这是“精确类型”的另一面：如果 `T` 是一个类型参数，它代表一个_单一_的实际类型。因此，例如，`Vec<T>` 包含单一具体类型的元素（实际上，向量表示被专门化以将这些元素内联布局）。有时异构集合是有用的；参见[特征对象][C-OBJECT]。
+- _签名冗长_：泛型使用过多可能会使函数签名更难以阅读和理解。
 
-* _Inline layout_. If a `struct` and `enum` type is generic over some type
-  parameter `T`, values of type `T` will be laid out inline in the
-  `struct`/`enum`, without any indirection.
+### 标准库中的示例
 
-* _Inference_. Since the type parameters to generic functions can usually be
-  inferred, generic functions can help cut down on verbosity in code where
-  explicit conversions or other method calls would usually be necessary.
+- [`std::fs::File::open`] 接受泛型类型 `AsRef<Path>` 的参数。这允许从字符串字面量 `"f.txt"`、[`Path`]、[`OsString`] 和其他一些类型方便地打开文件。
 
-* _Precise types_. Because generics give a _name_ to the specific type
-  implementing a trait, it is possible to be precise about places where that
-  exact type is required or produced. For example, a function
+## 如果特征作为特征对象有用，则应是对象安全的 (C-OBJECT)
 
-  ```rust
-  fn binary<T: Trait>(x: T, y: T) -> T
-  ```
+特征对象有一些显著的限制：通过特征对象调用的方法不能使用泛型，且不能在接收者位置之外使用 `Self`。
 
-  is guaranteed to consume and produce elements of exactly the same type `T`; it
-  cannot be invoked with parameters of different types that both implement
-  `Trait`.
+在设计特征时，尽早决定特征是作为对象使用还是作为泛型边界使用。
 
-### Disadvantages of generics
+如果特征旨在用作对象，其方法应接受和返回特征对象而不是使用泛型。
 
-* _Code size_. Specializing generic functions means that the function body is
-  duplicated. The increase in code size must be weighed against the performance
-  benefits of static dispatch.
-
-* _Homogeneous types_. This is the other side of the "precise types" coin: if
-  `T` is a type parameter, it stands for a _single_ actual type. So for example
-  a `Vec<T>` contains elements of a single concrete type (and, indeed, the
-  vector representation is specialized to lay these out in line). Sometimes
-  heterogeneous collections are useful; see [trait objects][C-OBJECT].
-
-* _Signature verbosity_. Heavy use of generics can make it more difficult to
-  read and understand a function's signature.
-
-[C-OBJECT]: #c-object
-
-### Examples from the standard library
-
-- [`std::fs::File::open`] takes an argument of generic type `AsRef<Path>`. This
-  allows files to be opened conveniently from a string literal `"f.txt"`, a
-  [`Path`], an [`OsString`], and a few other types.
-
-[`std::fs::File::open`]: https://doc.rust-lang.org/std/fs/struct.File.html#method.open
-[`Path`]: https://doc.rust-lang.org/std/path/struct.Path.html
-[`OsString`]: https://doc.rust-lang.org/std/ffi/struct.OsString.html
-
-
-<a id="c-object"></a>
-## Traits are object-safe if they may be useful as a trait object (C-OBJECT)
-
-Trait objects have some significant limitations: methods invoked through a trait
-object cannot use generics, and cannot use `Self` except in receiver position.
-
-When designing a trait, decide early on whether the trait will be used as an
-object or as a bound on generics.
-
-If a trait is meant to be used as an object, its methods should take and return
-trait objects rather than use generics.
-
-A `where` clause of `Self: Sized` may be used to exclude specific methods from
-the trait's object. The following trait is not object-safe due to the generic
-method.
+`where Self: Sized` 子句可用于从特征对象中排除特定方法。以下特征由于泛型方法而不是对象安全的。
 
 ```rust
 trait MyTrait {
@@ -178,8 +101,7 @@ trait MyTrait {
 }
 ```
 
-Adding a requirement of `Self: Sized` to the generic method excludes it from the
-trait object and makes the trait object-safe.
+向泛型方法添加 `Self: Sized` 的要求可以将其从特征对象中排除，并使特征对象安全。
 
 ```rust
 trait MyTrait {
@@ -189,26 +111,18 @@ trait MyTrait {
 }
 ```
 
-### Advantages of trait objects
+### 特征对象的优点
 
-* _Heterogeneity_. When you need it, you really need it.
-* _Code size_. Unlike generics, trait objects do not generate specialized
-  (monomorphized) versions of code, which can greatly reduce code size.
+- _异构性_：当你需要它时，你真的需要它。
+- _代码大小_：与泛型不同，特征对象不生成专用化（单态化）版本的代码，这可以大大减少代码大小。
 
-### Disadvantages of trait objects
+### 特征对象的缺点
 
-* _No generic methods_. Trait objects cannot currently provide generic methods.
-* _Dynamic dispatch and fat pointers_. Trait objects inherently involve
-  indirection and vtable dispatch, which can carry a performance penalty.
-* _No Self_. Except for the method receiver argument, methods on trait objects
-  cannot use the `Self` type.
+- _无泛型方法_：特征对象目前不能提供泛型方法。
+- _动态调度和胖指针_：特征对象本质上涉及间接和 vtable 调度，这可能带来性能损失。
+- _无 Self_：除了方法接收者参数外，特征对象上的方法不能使用 `Self` 类型。
 
-### Examples from the standard library
+### 标准库中的示例
 
-- The [`io::Read`] and [`io::Write`] traits are often used as objects.
-- The [`Iterator`] trait has several generic methods marked with `where Self:
-  Sized` to retain the ability to use `Iterator` as an object.
-
-[`io::Read`]: https://doc.rust-lang.org/std/io/trait.Read.html
-[`io::Write`]: https://doc.rust-lang.org/std/io/trait.Write.html
-[`Iterator`]: https://doc.rust-lang.org/std/iter/trait.Iterator.html
+- [`io::Read`] 和 [`io::Write`] 特征经常用作对象。
+- [`Iterator`] 特征有几个带有 `where Self: Sized` 标记的泛型方法，以保留将 `Iterator` 用作对象的能力。
