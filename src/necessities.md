@@ -1,23 +1,18 @@
-# Necessities
+# 必要条件
 
+## 稳定版 crate 的公共依赖必须稳定 (C-STABLE)
 
-<a id="c-stable"></a>
-## Public dependencies of a stable crate are stable (C-STABLE)
+一个 crate 不能在其所有公共依赖都稳定之前成为稳定版（>=1.0.0）。
 
-A crate cannot be stable (>=1.0.0) without all of its public dependencies being
-stable.
-
-Public dependencies are crates from which types are used in the public API of
-the current crate.
+公共依赖指的是在当前 crate 的公共 API 中使用的其他 crate 类型。
 
 ```rust
 pub fn do_my_thing(arg: other_crate::TheirThing) { /* ... */ }
 ```
 
-A crate containing this function cannot be stable unless `other_crate` is also
-stable.
+包含此函数的 crate 不能稳定，除非 `other_crate` 也是稳定的。
 
-Be careful because public dependencies can sneak in at unexpected places.
+请注意，公共依赖可能会在意想不到的地方出现。
 
 ```rust
 pub struct Error {
@@ -26,13 +21,12 @@ pub struct Error {
 
 enum ErrorImpl {
     Io(io::Error),
-    // Should be okay even if other_crate isn't
-    // stable, because ErrorImpl is private.
+    // 即使 other_crate 不是稳定的也没关系，
+    // 因为 ErrorImpl 是私有的。
     Dep(other_crate::Error),
 }
 
-// Oh no! This puts other_crate into the public API
-// of the current crate.
+// 哦不！这将 other_crate 引入了当前 crate 的公共 API。
 impl From<other_crate::Error> for Error {
     fn from(err: other_crate::Error) -> Self {
         Error { private: ErrorImpl::Dep(err) }
@@ -40,26 +34,17 @@ impl From<other_crate::Error> for Error {
 }
 ```
 
+## Crate 及其依赖项需具有宽松的许可证 (C-PERMISSIVE)
 
-<a id="c-permissive"></a>
-## Crate and its dependencies have a permissive license (C-PERMISSIVE)
+Rust 项目生成的软件是双重许可的，可以选择 [MIT] 或 [Apache 2.0] 许可证。为了与 Rust 生态系统最大限度地兼容，建议 crate 采用相同的方式。其他选项将在下文描述。
 
-The software produced by the Rust project is dual-licensed, under either the
-[MIT] or [Apache 2.0] licenses. Crates that simply need the maximum
-compatibility with the Rust ecosystem are recommended to do the same, in the
-manner described herein. Other options are described below.
-
-These API guidelines do not provide a detailed explanation of Rust's license,
-but there is a small amount said in the [Rust FAQ]. These guidelines are
-concerned with matters of interoperability with Rust, and are not comprehensive
-over licensing options.
+这些 API 指南不详细解释 Rust 的许可证，但在 [Rust FAQ] 中有少量说明。这些指南关注于与 Rust 的互操作性问题，并不全面覆盖许可选项。
 
 [MIT]: https://github.com/rust-lang/rust/blob/master/LICENSE-MIT
 [Apache 2.0]: https://github.com/rust-lang/rust/blob/master/LICENSE-APACHE
 [Rust FAQ]: https://github.com/dtolnay/rust-faq#why-a-dual-mitasl2-license
 
-To apply the Rust license to your project, define the `license` field in your
-`Cargo.toml` as:
+要将 Rust 许可证应用于您的项目，请在 `Cargo.toml` 中定义 `license` 字段：
 
 ```toml
 [package]
@@ -69,12 +54,9 @@ authors = ["..."]
 license = "MIT OR Apache-2.0"
 ```
 
-Then add the files `LICENSE-APACHE` and `LICENSE-MIT` in the repository root,
-containing the text of the licenses (which you can obtain, for instance, from
-choosealicense.com, for [Apache-2.0](https://choosealicense.com/licenses/apache-2.0/)
-and [MIT](https://choosealicense.com/licenses/mit/)).
+然后在仓库根目录添加文件 `LICENSE-APACHE` 和 `LICENSE-MIT`，其中包含许可证文本（可以从 choosealicense.com 获取，如 [Apache-2.0](https://choosealicense.com/licenses/apache-2.0/) 和 [MIT](https://choosealicense.com/licenses/mit/)）。
 
-And toward the end of your README.md:
+在您的 README.md 末尾添加：
 
 ```
 ## License
@@ -95,17 +77,8 @@ for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
 dual licensed as above, without any additional terms or conditions.
 ```
 
-Besides the dual MIT/Apache-2.0 license, another common licensing approach used
-by Rust crate authors is to apply a single permissive license such as MIT or
-BSD. This license scheme is also entirely compatible with Rust's, because it
-imposes the minimal restrictions of Rust's MIT license.
+除了双重 MIT/Apache-2.0 许可证，Rust crate 作者常用的另一种许可方式是单一宽松许可证，如 MIT 或 BSD。这种许可方案也与 Rust 的许可证完全兼容，因为它施加了 Rust 的 MIT 许可证的最低限制。
 
-Crates that desire perfect license compatibility with Rust are not recommended
-to choose only the Apache license. The Apache license, though it is a permissive
-license, imposes restrictions beyond the MIT and BSD licenses that can
-discourage or prevent their use in some scenarios, so Apache-only software
-cannot be used in some situations where most of the Rust runtime stack can.
+为了与 Rust 完美的许可证兼容性，不建议 crate 仅选择 Apache 许可证。尽管 Apache 许可证是宽松的，但它施加了超出 MIT 和 BSD 许可证的限制，可能会在某些情况下阻碍或禁止使用，因此仅有 Apache 许可证的软件在某些情况下无法使用大多数 Rust 运行时栈。
 
-The license of a crate's dependencies can affect the restrictions on
-distribution of the crate itself, so a permissively-licensed crate should
-generally only depend on permissively-licensed crates.
+crate 的依赖项的许可证可能会影响 crate 本身的分发限制，因此具有宽松许可证的 crate 通常应仅依赖于具有宽松许可证的 crate。
