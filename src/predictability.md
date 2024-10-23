@@ -102,11 +102,11 @@ fn read(&mut self, buf: &mut [u8]) -> io::Result<usize>
 
 ### 标准库中的示例
 
-- [`Box<T>`](https://doc.rust-lang.org/std/boxed/struct.Box.html)
-- [`String`](https://doc.rust-lang.org/std/string/struct.String.html) 是指向 [`str`](https://doc.rust-lang.org/std/primitive.str.html) 的智能指针
-- [`Rc<T>`](https://doc.rust-lang.org/std/rc/struct.Rc.html)
-- [`Arc<T>`](https://doc.rust-lang.org/std/sync/struct.Arc.html)
-- [`Cow<'a, T>`](https://doc.rust-lang.org/std/borrow/enum.Cow.html)
+* [`Box<T>`](https://doc.rust-lang.org/std/boxed/struct.Box.html)
+* [`String`](https://doc.rust-lang.org/std/string/struct.String.html) 是指向 [`str`](https://doc.rust-lang.org/std/primitive.str.html) 的智能指针
+* [`Rc<T>`](https://doc.rust-lang.org/std/rc/struct.Rc.html)
+* [`Arc<T>`](https://doc.rust-lang.org/std/sync/struct.Arc.html)
+* [`Cow<'a, T>`](https://doc.rust-lang.org/std/borrow/enum.Cow.html)
 
 ## 构造函数是静态的固有方法 (C-CTOR)
 
@@ -137,9 +137,9 @@ let ex = Example::new();
 
 一些构造函数是“转换构造函数”，它们从不同类型的现有值创建新类型。这些通常以 `from_` 开头命名，如 [`std::io::Error::from_raw_os_error`]。注意 `From` 特征 ([C-CONV-TRAITS])，它非常相似。`from_` 前缀的转换构造函数与 `From<T>` 实现之间有三个区别：
 
-- `from_` 构造函数可以是不安全的；而 `From` 实现不能。例如 [`Box::from_raw`]。
-- `from_` 构造函数可以接受附加参数以消除源数据的歧义，如 [`u64::from_str_radix`]。
-- `From` 实现仅在源数据类型足以确定输出数据类型的编码时适用。当输入只是一个位袋时，如 [`u64::from_be`] 或 [`String::from_utf8`]，转换构造函数名称能够识别它们的含义。
+* `from_` 构造函数可以是不安全的；而 `From` 实现不能。例如 [`Box::from_raw`]。
+* `from_` 构造函数可以接受附加参数以消除源数据的歧义，如 [`u64::from_str_radix`]。
+* `From` 实现仅在源数据类型足以确定输出数据类型的编码时适用。当输入只是一个位袋时，如 [`u64::from_be`] 或 [`String::from_utf8`]，转换构造函数名称能够识别它们的含义。
 
 [`Box::from_raw`]: https://doc.rust-lang.org/std/boxed/struct.Box.html#method.from_raw
 [`u64::from_str_radix`]: https://doc.rust-lang.org/std/primitive.u64.html#method.from_str_radix
@@ -153,11 +153,11 @@ let ex = Example::new();
 
 ### 标准库中的示例
 
-- [`std::io::Error::new`] 是常用的 IO 错误构造函数。
-- [`std::io::Error::from_raw_os_error`] 是基于从操作系统接收到的错误代码的转换构造函数。
-- [`Box::new`] 创建一个新的容器类型，接受单个参数。
-- [`File::open`] 打开一个文件资源。
-- [`Mmap::open_with_offset`] 打开一个内存映射文件，具有附加选项。
+* [`std::io::Error::new`] 是常用的 IO 错误构造函数。
+* [`std::io::Error::from_raw_os_error`] 是基于从操作系统接收到的错误代码的转换构造函数。
+* [`Box::new`] 创建一个新的容器类型，接受单个参数。
+* [`File::open`] 打开一个文件资源。
+* [`Mmap::open_with_offset`] 打开一个内存映射文件，具有附加选项。
 
 [`File::open`]: https://doc.rust-lang.org/stable/std/fs/struct.File.html#method.open
 [`Mmap::open`]: https://docs.rs/memmap/0.5.2/memmap/struct.Mmap.html#method.open
