@@ -1,49 +1,38 @@
 # Macros
 
+## 输入语法应与输出相呼应 (C-EVOCATIVE)
 
-<a id="c-evocative"></a>
-## Input syntax is evocative of the output (C-EVOCATIVE)
+Rust 宏允许你设计几乎任何输入语法。尽量保持输入语法与用户代码的其他部分一致，通过尽可能地反映现有 Rust 语法来实现这一点。注意关键字和标点符号的选择和位置。
 
-Rust macros let you dream up practically whatever input syntax you want. Aim to
-keep input syntax familiar and cohesive with the rest of your users' code by
-mirroring existing Rust syntax where possible. Pay attention to the choice and
-placement of keywords and punctuation.
+一个好的指导原则是使用与宏输出中产生的语法相似的语法，尤其是关键字和标点符号。
 
-A good guide is to use syntax, especially keywords and punctuation, that is
-similar to what will be produced in the output of the macro.
-
-For example if your macro declares a struct with a particular name given in the
-input, preface the name with the keyword `struct` to signal to readers that a
-struct is being declared with the given name.
+例如，如果你的宏声明了一个具有特定名称的结构体，请在名称前加上关键字 `struct`，以向读者表明正在声明一个具有给定名称的结构体。
 
 ```rust
-// Prefer this...
+// 优先选择这种方式...
 bitflags! {
     struct S: u32 { /* ... */ }
 }
 
-// ...over no keyword...
+// ...而不是没有关键字...
 bitflags! {
     S: u32 { /* ... */ }
 }
 
-// ...or some ad-hoc word.
+// ...或一些临时的词。
 bitflags! {
     flags S: u32 { /* ... */ }
 }
 ```
 
-Another example is semicolons vs commas. Constants in Rust are followed by
-semicolons so if your macro declares a chain of constants, they should likely be
-followed by semicolons even if the syntax is otherwise slightly different from
-Rust's.
+另一个例子是分号与逗号。Rust 中的常量后跟分号，因此如果你的宏声明了一连串的常量，它们也应该跟分号，即使语法与 Rust 的其他部分略有不同。
 
 ```rust
-// Ordinary constants use semicolons.
+// 普通常量使用分号。
 const A: u32 = 0b000001;
 const B: u32 = 0b000010;
 
-// So prefer this...
+// 因此优先选择这种方式...
 bitflags! {
     struct S: u32 {
         const C = 0b000100;
@@ -51,7 +40,7 @@ bitflags! {
     }
 }
 
-// ...over this.
+// ...而不是这种方式。
 bitflags! {
     struct S: u32 {
         const E = 0b010000,
@@ -60,16 +49,11 @@ bitflags! {
 }
 ```
 
-Macros are so diverse that these specific examples won't be relevant, but think
-about how to apply the same principles to your situation.
+宏是如此多样，以至于这些具体例子可能不相关，但要考虑如何将相同的原则应用于你的情况。
 
+## 项目宏与属性良好结合 (C-MACRO-ATTR)
 
-<a id="c-macro-attr"></a>
-## Item macros compose well with attributes (C-MACRO-ATTR)
-
-Macros that produce more than one output item should support adding attributes
-to any one of those items. One common use case would be putting individual items
-behind a cfg.
+生成多个输出项目的宏应支持为任一项目添加属性。一个常见的用例是将单个项目放在 `cfg` 后面。
 
 ```rust
 bitflags! {
@@ -82,8 +66,7 @@ bitflags! {
 }
 ```
 
-Macros that produce a struct or enum as output should support attributes so that
-the output can be used with derive.
+生成结构体或枚举作为输出的宏应支持属性，以便输出可以与 `derive` 一起使用。
 
 ```rust
 bitflags! {
@@ -95,14 +78,9 @@ bitflags! {
 }
 ```
 
+## 项目宏可在任何允许项目的地方使用 (C-ANYWHERE)
 
-<a id="c-anywhere"></a>
-## Item macros work anywhere that items are allowed (C-ANYWHERE)
-
-Rust allows items to be placed at the module level or within a tighter scope
-like a function. Item macros should work equally well as ordinary items in all
-of these places. The test suite should include invocations of the macro in at
-least the module scope and function scope.
+Rust 允许将项目放在模块级别或更小的范围内，如函数内。项目宏应像普通项目一样在所有这些地方正常工作。测试套件应包括在至少模块范围和函数范围内调用宏。
 
 ```rust
 #[cfg(test)]
@@ -116,8 +94,7 @@ mod tests {
 }
 ```
 
-As a simple example of how things can go wrong, this macro works great in a
-module scope but fails in a function scope.
+这是一个简单的例子，说明事情如何出错，这个宏在模块范围内工作正常，但在函数范围内失败。
 
 ```rust
 macro_rules! broken {
@@ -132,16 +109,13 @@ macro_rules! broken {
 broken!(m::T); // okay, expands to T and m::T
 
 fn g() {
-    broken!(m::U); // fails to compile, super::U refers to the containing module not g
+    broken!(m::U); // 编译失败，super::U 指的是包含模块而不是 g
 }
 ```
 
+## 项目宏支持可见性说明符 (C-MACRO-VIS)
 
-<a id="c-macro-vis"></a>
-## Item macros support visibility specifiers (C-MACRO-VIS)
-
-Follow Rust syntax for visibility of items produced by a macro. Private by
-default, public if `pub` is specified.
+遵循 Rust 语法，宏生成的项目默认是私有的，若指定 `pub` 则为公有。
 
 ```rust
 bitflags! {
@@ -159,21 +133,17 @@ bitflags! {
 }
 ```
 
+## 类型片段应灵活 (C-MACRO-TY)
 
-<a id="c-macro-ty"></a>
-## Type fragments are flexible (C-MACRO-TY)
+如果你的宏接受一个类型片段，如输入中的 `$t:ty`，它应该可以用于以下所有情况：
 
-If your macro accepts a type fragment like `$t:ty` in the input, it should be
-usable with all of the following:
+- 基本类型：`u8`, `&str`
+- 相对路径：`m::Data`
+- 绝对路径：`::base::Data`
+- 向上相对路径：`super::Data`
+- 泛型：`Vec<String>`
 
-- Primitives: `u8`, `&str`
-- Relative paths: `m::Data`
-- Absolute paths: `::base::Data`
-- Upward relative paths: `super::Data`
-- Generics: `Vec<String>`
-
-As a simple example of how things can go wrong, this macro works great with
-primitives and absolute paths but fails with relative paths.
+这是一个简单的例子，说明事情如何出错，这个宏在基本类型和绝对路径上工作正常，但在相对路径上失败。
 
 ```rust
 macro_rules! broken {
@@ -189,5 +159,5 @@ broken!(a => u8); // okay
 broken!(b => ::std::marker::PhantomData<()>); // okay
 
 struct S;
-broken!(c => S); // fails to compile
+broken!(c => S); // 编译失败
 ```
